@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Optical-guided Thermal Fusion — Demo</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --accent:#ff7a00;
+      --muted:#6c757d;
+      --card-bg: linear-gradient(180deg,#ffffff,#fbfbfb);
+    }
+    body{
+      background: linear-gradient(180deg,#f4f6f9 0%, #eef2f7 100%);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color:#1f2937;
+    }
+    .app-shell{ max-width:1200px; margin:28px auto; padding:18px; }
+    .brand{ display:flex; gap:12px; align-items:center }
+    .brand .logo{
+      width:56px; height:56px; border-radius:10px;
+      background: linear-gradient(135deg,var(--accent), #ffb04a); box-shadow:0 6px 18px rgba(0,0,0,0.12);
+      display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:20px;
+    }
+    .card-modern{ border:0; border-radius:14px; box-shadow: 0 8px 30px rgba(18,38,63,0.06); background:var(--card-bg); }
+    .preview{
+      background:linear-gradient(180deg,#e9eef8,#fff);
+      border-radius:10px; min-height:260px; display:flex; align-items:center; justify-content:center;
+      overflow:hidden; position:relative; border:1px solid rgba(15,23,42,0.04);
+    }
+    .preview img{ max-width:100%; max-height:100%; display:block; object-fit:contain; }
+    .small-muted{ color:var(--muted); font-size:13px;}
+    .control-label{ font-weight:600; font-size:14px; }
+    .range-value{ font-weight:700; color:var(--accent); margin-left:8px;}
+    .btn-primary{ background:linear-gradient(90deg,var(--accent),#ffb04a); border:0; box-shadow:0 6px 18px rgba(255,122,0,0.18); }
+    footer{ text-align:center; color:#8b949e; padding:16px 0; font-size:13px; margin-top:18px }
+    @media (max-width:991px){
+      .d-lg-flex { display:block !important; }
+      .preview { min-height:200px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="brand mb-3">
+      <div>
+        <h4 style="margin:0">Optical-guided Thermal Fusion</h4>
+        <div class="small-muted">Upload optical & thermal images → tune parameters → get fused result</div>
+      </div>
+      <div class="ms-auto small-muted">Local Demo • <i class="fa fa-server"></i> /fuse</div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12 col-lg-4">
+        <div class="card-modern p-3">
+          <div class="mb-3">
+            <label class="control-label">Optical (High-res RGB)</label>
+            <input type="file" id="optical" accept="image/*" class="form-control mt-2" />
+            <div class="small-muted mt-2">PNG/JPEG/TIFF recommended. Prefer resolution &gt;512px for crisp edges.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="control-label">Thermal (Low-res grayscale / thermal)</label>
+            <input type="file" id="thermal" accept="image/*" class="form-control mt-2" />
+            <div class="small-muted mt-2">Single-band thermal (or grayscale PNG). Lower-res is okay — it'll be upsampled.</div>
+          </div>
+
+          <hr/>
+
+          <div class="mb-2">
+            <label class="control-label">Detail strength <span id="alphaVal" class="range-value">0.9</span></label>
+            <input id="alpha" type="range" min="0" max="2" step="0.05" value="0.9" class="form-range" />
+          </div>
+
+          <div class="mb-2">
+            <label class="control-label">Guidance blur (smoothness) <span id="blurVal" class="range-value">5</span></label>
+            <input id="blur_sigma" type="range" min="1" max="15" step="0.5" value="5" class="form-range" />
+          </div>
+
+          <div class="mb-2">
+            <label class="control-label">Edge dilation <span id="dilateVal" class="range-value">3</span></label>
+            <input id="edge_dilate" type="range" min="1" max="9" step="1" value="3" class="form-range" />
+          </div>
+
+          <div class="mb-2">
+            <label class="control-label">Thermal opacity <span id="opacityVal" class="range-value">0.60</span></label>
+            <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.6" class="form-range" />
+          </div>
+
+          <div class="mb-3">
+            <label class="control-label">Color map</label>
+            <select id="cmap" class="form-select mt-2">
+              <option value="inferno" selected>Inferno (warm)</option>
+              <option value="magma">Magma</option>
+              <option value="plasma">Plasma</option>
+              <option value="viridis">Viridis</option>
+              <option value="jet">Jet (classic)</option>
+            </select>
+            <div class="small-muted mt-1">Pick a palette for the thermal overlay.</div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button id="run" class="btn btn-primary btn-lg"><i class="fa fa-bolt me-2"></i>Fuse</button>
+            <button id="download" class="btn btn-outline-secondary" disabled><i class="fa fa-download me-2"></i>Download Result</button>
+          </div>
+
+          <div class="mt-3 text-center small-muted">
+            <div id="status" style="min-height:22px">Ready</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-8">
+        <div class="card-modern p-3">
+          <div class="row g-3">
+            <div class="col-12 d-flex align-items-center justify-content-between mb-2">
+              <div><strong>Previews</strong> <span class="small-muted"> — optical, thermal & fused</span></div>
+              <div class="small-muted">Tip: upload both images then press <kbd>Fuse</kbd></div>
+            </div>
+
+            <div class="col-12 d-lg-flex" style="gap:12px">
+              <div style="flex:1">
+                <div class="small-muted mb-1">Optical</div>
+                <div id="opt_preview_box" class="preview">
+                  <img id="opt_preview" alt="optical preview" src="" />
+                </div>
+              </div>
+
+              <div style="flex:1">
+                <div class="small-muted mb-1">Thermal (input)</div>
+                <div id="therm_preview_box" class="preview">
+                  <img id="th_preview" alt="thermal preview" src="" />
+                </div>
+              </div>
+
+              <div style="flex:1">
+                <div class="small-muted mb-1">Fused (result)</div>
+                <div id="result_box" class="preview">
+                  <!-- Placeholder -->
+                  <div id="result_placeholder" style="text-align:center; padding:18px;">
+                    <svg width="96" height="96" viewBox="0 0 24 24" fill="none" style="opacity:0.85">
+                      <rect x="1.5" y="3.5" width="21" height="17" rx="2" stroke="#d1d5db" stroke-width="1.5" fill="#fbfbfb"/>
+                      <path d="M7 9h10M7 13h6" stroke="#c4c8cc" stroke-width="1.4" stroke-linecap="round"/>
+                      <circle cx="8.5" cy="7.5" r="0.9" fill="#ffd580"/>
+                      <path d="M16 16c.5-.9 1.4-2 2.6-2.7" stroke="#ff7a00" stroke-width="1.6" stroke-linecap="round" />
+                    </svg>
+                    <div style="margin-top:10px; font-weight:600; color:#6b7280">No fused result yet</div>
+                    <div class="small-muted" style="margin-top:6px">Upload optical + thermal images and press <b>Fuse</b></div>
+                  </div>
+
+                  <img id="result" alt="result preview" src="" style="display:none; width:100%; height:100%; object-fit:contain;" />
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 mt-2">
+              <div class="small-muted">Adjust sliders and press <b>Fuse</b>. The UI will show progress and allow downloading the final fused PNG.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Built for demo • Optical-guided Thermal Super-Resolution prototype — local only
+    </footer>
+  </div>
+
+<script>
+  // Element references
+  const optInput = document.getElementById('optical');
+  const thInput = document.getElementById('thermal');
+  const optPreview = document.getElementById('opt_preview');
+  const thPreview = document.getElementById('th_preview');
+  const resultImg = document.getElementById('result');
+  const runBtn = document.getElementById('run');
+  const downloadBtn = document.getElementById('download');
+  const statusEl = document.getElementById('status');
+
+  const alpha = document.getElementById('alpha'); const alphaVal = document.getElementById('alphaVal');
+  const blur_sigma = document.getElementById('blur_sigma'); const blurVal = document.getElementById('blurVal');
+  const edge_dilate = document.getElementById('edge_dilate'); const dilateVal = document.getElementById('dilateVal');
+  const opacity = document.getElementById('opacity'); const opacityVal = document.getElementById('opacityVal');
+  const cmap = document.getElementById('cmap');
+
+  function updateUIValues(){
+    alphaVal.textContent = alpha.value;
+    blurVal.textContent = blur_sigma.value;
+    dilateVal.textContent = edge_dilate.value;
+    opacityVal.textContent = parseFloat(opacity.value).toFixed(2);
+  }
+  alpha.addEventListener('input', updateUIValues);
+  blur_sigma.addEventListener('input', updateUIValues);
+  edge_dilate.addEventListener('input', updateUIValues);
+  opacity.addEventListener('input', updateUIValues);
+  updateUIValues();
+
+  function previewFile(fileInput, imgEl){
+    const f = fileInput.files[0];
+    if(!f){ imgEl.src = ''; return; }
+    imgEl.src = URL.createObjectURL(f);
+    // clear result
+    showResultPlaceholder();
+  }
+  optInput.addEventListener('change', ()=> previewFile(optInput, optPreview));
+  thInput.addEventListener('change', ()=> previewFile(thInput, thPreview));
+
+  async function postForm(formData){
+    status('Uploading & processing…');
+    runBtn.disabled = true;
+    runBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+    try {
+      const resp = await fetch('/fuse', { method:'POST', body: formData });
+      if(!resp.ok){
+        const txt = await resp.text();
+        throw new Error(txt || ('HTTP ' + resp.status));
+      }
+      const blob = await resp.blob();
+      return blob;
+    } finally {
+      runBtn.disabled = false;
+      runBtn.innerHTML = '<i class="fa fa-bolt me-2"></i>Fuse';
+    }
+  }
+
+  runBtn.addEventListener('click', async ()=>{
+    if(!optInput.files[0] || !thInput.files[0]) { alert('Please upload both optical and thermal images.'); return; }
+
+    const form = new FormData();
+    form.append('optical', optInput.files[0]);
+    form.append('thermal', thInput.files[0]);
+    form.append('alpha', alpha.value);
+    form.append('blur_sigma', blur_sigma.value);
+    form.append('edge_dilate', edge_dilate.value);
+    form.append('cmap', cmap.value);
+    form.append('opacity', opacity.value);
+
+    try {
+      const blob = await postForm(form);
+      const url = URL.createObjectURL(blob);
+
+      // show image and hide placeholder
+      const placeholder = document.getElementById('result_placeholder');
+      placeholder.style.display = 'none';
+      resultImg.style.display = 'block';
+      resultImg.src = url;
+
+      downloadBtn.disabled = false;
+      downloadBtn.onclick = ()=> {
+        const a = document.createElement('a');
+        a.href = url; a.download = 'fused.png'; a.click();
+      };
+      status('Done — preview updated.');
+    } catch(err){
+      console.error('Fusion error', err);
+      status('Error: ' + (err.message || 'processing failed'));
+      alert('Server error: ' + (err.message || 'processing failed'));
+    }
+  });
+
+  function status(s){ statusEl.textContent = s; }
+
+  function showResultPlaceholder(){
+    const placeholder = document.getElementById('result_placeholder');
+    const resultEl = document.getElementById('result');
+    if(placeholder && resultEl){
+      resultEl.src = '';
+      resultEl.style.display = 'none';
+      placeholder.style.display = 'block';
+      downloadBtn.disabled = true;
+    }
+  }
+  // init placeholder visible
+  showResultPlaceholder();
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') {
+      if(optInput.files[0] && thInput.files[0]) runBtn.click();
+    }
+  });
+</script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
