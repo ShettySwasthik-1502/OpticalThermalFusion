@@ -9,7 +9,7 @@
   ],
   "functions": {
     "api/**/*.py": {
-      "runtime": "vercel-python@3.9"
+      "excludeFiles": "{tests/**,__tests__/**,**/*.test.py,**/test_*.py,fixtures/**,__fixtures__/**,testdata/**,sample-data/**,static/**,assets/**}"
     }
   }
 }
