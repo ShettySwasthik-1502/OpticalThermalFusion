@@ -1,0 +1,29 @@
+# Python virtualenvs
+.venv
+venv
+Env
+env
+
+# Git, temp files
+.git
+.gitignore
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Python build / caches
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+build
+dist
+*.egg-info
+
+# Local data
+uploads/
+outputs/
+output/

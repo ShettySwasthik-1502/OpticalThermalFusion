@@ -216,7 +216,13 @@
     runBtn.disabled = true;
     runBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
     try {
-      const resp = await fetch('/fuse', { method:'POST', body: formData });
+     const BACKEND_BASE = "https://your-backend.onrender.com"; // <<-- UPDATE THIS
+  async function postForm(formData){
+    status('Uploading & processing…');
+    runBtn.disabled = true;
+    runBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+    try {
+      const resp = await fetch(`${BACKEND_BASE}/fuse`, { method:'POST', body: formData });
       if(!resp.ok){
         const txt = await resp.text();
         throw new Error(txt || ('HTTP ' + resp.status));
