@@ -10,6 +10,9 @@
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
+  <!-- runtime config for backend URL -->
+<script src="/env.js"></script>
+
   <style>
     :root{
       --accent:#ff7a00;
@@ -211,18 +214,16 @@
   optInput.addEventListener('change', ()=> previewFile(optInput, optPreview));
   thInput.addEventListener('change', ()=> previewFile(thInput, thPreview));
 
+  // runtime-config friendly backend base (falls back to relative path when empty)
+  const BACKEND_BASE = (window.__BACKEND_BASE__ || "").trim();
+
   async function postForm(formData){
     status('Uploading & processing…');
     runBtn.disabled = true;
     runBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
     try {
-     const BACKEND_BASE = "https://your-backend.onrender.com"; // <<-- UPDATE THIS
-  async function postForm(formData){
-    status('Uploading & processing…');
-    runBtn.disabled = true;
-    runBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-    try {
-      const resp = await fetch(`${BACKEND_BASE}/fuse`, { method:'POST', body: formData });
+      const url = (BACKEND_BASE === "") ? `/fuse` : `${BACKEND_BASE}/fuse`;
+      const resp = await fetch(url, { method:'POST', body: formData });
       if(!resp.ok){
         const txt = await resp.text();
         throw new Error(txt || ('HTTP ' + resp.status));
@@ -234,6 +235,7 @@
       runBtn.innerHTML = '<i class="fa fa-bolt me-2"></i>Fuse';
     }
   }
+
 
   runBtn.addEventListener('click', async ()=>{
     if(!optInput.files[0] || !thInput.files[0]) { alert('Please upload both optical and thermal images.'); return; }

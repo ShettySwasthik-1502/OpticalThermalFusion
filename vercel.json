@@ -3,13 +3,6 @@
   "version": 2,
   "routes": [
     { "src": "/", "dest": "/web/index.html" },
-    { "src": "/(.*)", "dest": "/web/$1" },
-    { "src": "/fuse", "dest": "/api/app.py" },
-    { "src": "/api/(.*)", "dest": "/api/$1" }
-  ],
-  "functions": {
-    "api/**/*.py": {
-      "excludeFiles": "{tests/**,__tests__/**,**/*.test.py,**/test_*.py,fixtures/**,__fixtures__/**,testdata/**,sample-data/**,static/**,assets/**}"
-    }
-  }
+    { "src": "/(.*)", "dest": "/web/$1" }
+  ]
 }

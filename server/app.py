@@ -7,10 +7,17 @@ from PIL import Image
 import io
 from fusion import guided_detail_injection
 
+# --- CORS support (for cross-origin requests from Vercel UI hosted on a separate domain) ---
+from flask_cors import CORS
+
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder="../web", static_url_path="/")
+
+# Allow CORS for all origins for initial testing. IMPORTANT: for production,
+# replace origins="*" with your frontend origin (e.g. "https://your-frontend.vercel.app")
+CORS(app, origins="*")
 
 ALLOWED = {"png", "jpg", "jpeg", "tif", "tiff", "bmp"}
 
@@ -35,6 +42,7 @@ def fuse():
       optional form fields:
       - alpha (float)
       - blur_sigma (int)
+      - edge_dilate (int)
     """
     if "optical" not in request.files or "thermal" not in request.files:
         return jsonify({"error":"optical and thermal files required"}), 400
@@ -78,12 +86,13 @@ def fuse():
     bio.seek(0)
 
     return send_file(
-    bio,
-    mimetype="image/png",
-    as_attachment=False,
-    download_name="fused.png"   # <--- updated name
-)
-
+        bio,
+        mimetype="image/png",
+        as_attachment=False,
+        download_name="fused.png"
+    )
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # When running locally for dev you can use this, but in production (Render),
+    # we'll run with gunicorn and bind to the $PORT env var.
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)

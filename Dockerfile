@@ -14,7 +14,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 # Set workdir
 WORKDIR /app
 
-# Copy requirements and install (use the final requirements.txt you provided)
+# Copy requirements and install
 COPY requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r /app/requirements.txt
@@ -22,9 +22,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 # Copy project
 COPY . /app
 
-# Expose the port (Render / Railway provide $PORT env variable)
+# default port (can be overridden by Render's $PORT env)
 ENV PORT=5000
 EXPOSE 5000
 
-# Use gunicorn for production-grade serving of Flask app (server.app:app)
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "server.app:app", "--workers", "1", "--threads", "4", "--timeout", "120"]
+# Use shell form so $PORT is expanded at runtime (Render injects PORT)
+CMD gunicorn --bind 0.0.0.0:$PORT server.app:app --workers 1 --threads 4 --timeout 120
