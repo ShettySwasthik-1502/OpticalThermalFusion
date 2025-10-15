@@ -1,0 +1,37 @@
+# Virtual envs
+.venv/
+venv/
+Env/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Python build / caches
+build/
+dist/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Local config
+.env
+.env.local
+.env.*.local
+
+# Vercel / deployment caches
+.vercel/
+.vercel_build_output/
+
+# Large/temporary assets
+uploads/
+outputs/
+output/
